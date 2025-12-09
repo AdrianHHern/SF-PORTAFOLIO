@@ -151,46 +151,56 @@ PESOS_SECTORES = {
 
 # 2.1. Funciones de las métricas vistas en clase
 
-
+# Beta: sensibilidad respecto al benchmark
 def beta(port, benchmark):
-    cov = np.cov(port, benchmark)[0, 1]
-    var = np.var(benchmark)
+    cov = np.cov(port, benchmark)[0, 1]   # Covarianza portafolio vs benchmark
+    var = np.var(benchmark)   # Varianza benchmark
     return cov / var
 
+# Media de los retornos
 def media(r):
     return r.mean()
 
+# Volatilidad
 def volatilidad(r):
     return r.std()
 
+# Ratio Sharpe anualizado
 def sharpe(r, rf=0.0):
-    excess = r - rf/252
+    excess = r - rf/252   # Retorno excedente diario
     return np.sqrt(252) * excess.mean() / excess.std()
 
+# Ratio de Sortino
 def sortino(r, rf=0.0):
-    excess = r - rf/252
-    downside = excess[excess < 0].std()
+    excess = r - rf/252 # Retorno excedente
+    downside = excess[excess < 0].std()  # Solo desviación de retornos negativos
     return np.sqrt(252) * excess.mean() / downside
 
+# Máxima caída desde un pico
 def max_drawdown(r):
     cum = (1 + r).cumprod()
-    peak = cum.cummax()
-    dd = (cum - peak) / peak
-    return dd.min()
+    peak = cum.cummax()   # Nivel máximo alcanzado hasta cada punto
+    dd = (cum - peak) / peak   # Drawdown relativo
+    return dd.min()   # Máximo valor más bajo
 
+# Valor en Riesgo al 95%
 def var_95(r):
-    return np.percentile(r, 5)
+    return np.percentile(r, 5)   # Percentil 5
 
+# CVaR o Expected Shortfall 95%
 def cvar_95(r):
     v = var_95(r)
-    return r[r <= v].mean()
+    return r[r <= v].mean()   # Promedio de pérdidas más extremas
 
+# Sesgo de distribución
 def sesgo(r):
     return skew(r)
 
+# Kurtosis
 def curtosis(r):
     return kurtosis(r)
 
+# Función que organiza todas las métricas en un diccionario
 def calcular_metricas(serie, rf=0.05):
     return {
         "Media diaria": media(serie),
@@ -225,6 +235,7 @@ def construir_portafolio_arbitrario(retornos, pesos_dict):
     portafolio = (r * pesos).sum(axis=1)
     return portafolio
 
+# Obtener medias y covarianzas
 def obtener_mu_cov(retornos):
     mu = retornos.mean()          # media diaria
     cov = retornos.cov()          # covarianza diaria
@@ -248,14 +259,17 @@ def construir_portafolio(data_precios, pesos_dict):
 
 # 4. Optimización de portafolio
 
+# Volatilidad del portafolio
 def port_vol(w, cov):
     w = np.array(w)
     return np.sqrt(w.T @ cov.values @ w)
 
+# Retorno del portafolio
 def port_ret(w, mu):
     w = np.array(w)
     return w @ mu.values
 
+# Portafolio de mínima varianza
 def min_var_portfolio(mu, cov):
     n = len(mu)
     w0 = np.ones(n) / n
@@ -270,6 +284,7 @@ def min_var_portfolio(mu, cov):
     res = minimize(obj, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
 
+# Portafolio con máximo Sharpe
 def max_sharpe_portfolio(mu, cov, rf_anual):
     n = len(mu)
     w0 = np.ones(n) / n
@@ -290,6 +305,7 @@ def max_sharpe_portfolio(mu, cov, rf_anual):
     res = minimize(neg_sharpe, w0, bounds=bounds, constraints=cons)
     return res.x if res.success else None
 
+# Markowitz con retorno objetivo
 def markowitz_target_portfolio(mu, cov, target_anual):
     n = len(mu)
     w0 = np.ones(n) / n
@@ -308,30 +324,28 @@ def markowitz_target_portfolio(mu, cov, target_anual):
     return res.x if res.success else None
 
 
-# 5. App
+# 5. App. INTERFAZ PRINCIPAL DE LA APLICACIÓN
 
 def main():
     st.markdown("## 📈 Cálculo de Métricas de Portafolios")
-
-    st.markdown("""
-    <div style="
-        background-color:#ffffff;
-        padding:18px;
-        border-radius:10px;
-        border-left:4px solid #7a3db8;
-        box-shadow:0px 2px 6px rgba(0,0,0,0.05);
-        margin-bottom:20px;">
-        <p style="font-size:1rem; color:#333;">
-            Aplicación para analizar portafolios de <b>Regiones</b> y <b>Sectores</b>:
-        </p>
-        <ul style="font-size:1rem; color:#333; line-height:1.6;">
-            <li>Benchmark (pesos dados)</li>
-            <li>Portafolio arbitrario (definido por el usuario)</li>
-            <li>Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
+   st.markdown("""
+<div style="
+    background-color:#ffffff;
+    padding:18px;
+    border-radius:10px;
+    border-left:4px solid #7a3db8;
+    box-shadow:0px 2px 6px rgba(0,0,0,0.05);
+    margin-bottom:20px;">
+    <p style="font-size:1rem; color:#333;">
+        Aplicación para analizar portafolios de <b>Regiones</b> y <b>Sectores</b>:
+    </p>
+    <ul style="font-size:1rem; color:#333; line-height:1.6;">
+        <li>Benchmark (pesos dados)</li>
+        <li>Portafolio arbitrario (definido por el usuario)</li>
+        <li>Portafolios optimizados: mínima varianza, máximo Sharpe y Markowitz con rendimiento objetivo.</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
 
 
     # Sidebar: parámetros generales
@@ -431,7 +445,7 @@ def main():
         # ----------------------------
         # Métricas
         # ----------------------------
-                if modo != "Optimización":
+        if modo != "Optimización":
             metrics_dict = {}
 
             if modo in ["Solo benchmark", "Benchmark y arbitrario"]:
@@ -447,46 +461,11 @@ def main():
             # Rendimiento acumulado
             st.markdown("### Rendimiento acumulado")
             df_cum = pd.DataFrame()
-
             if "Benchmark" in metrics_dict:
                 df_cum["Benchmark"] = (1 + portafolio_bench).cumprod()
-
             if "Arbitrario" in metrics_dict and portafolio_arbi is not None:
                 df_cum["Arbitrario"] = (1 + portafolio_arbi).cumprod()
-
-            import plotly.graph_objects as go
-
-            fig = go.Figure()
-
-            for col in df_cum.columns:
-                fig.add_trace(go.Scatter(
-                    x=df_cum.index,
-                    y=df_cum[col],
-                    mode='lines',
-                    name=col,
-                    line=dict(width=3)  # grosor de línea
-                ))
-
-            fig.update_layout(
-                title="📈 Rendimiento acumulado",
-                title_font=dict(size=24),
-                plot_bgcolor="#f9fafc",
-                paper_bgcolor="#f9fafc",
-                hovermode="x unified",
-                legend=dict(
-                    bgcolor="rgba(255,255,255,0.7)",
-                    bordercolor="rgba(0,0,0,0.1)",
-                    borderwidth=1
-                ),
-                xaxis=dict(
-                    gridcolor="rgba(0,0,0,0.1)"
-                ),
-                yaxis=dict(
-                    gridcolor="rgba(0,0,0,0.1)"
-                )
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
+            st.line_chart(df_cum)
 
         else:
             # Métricas de los portafolios optimizados
@@ -495,7 +474,6 @@ def main():
                 "MaxSharpe": calcular_metricas(port_maxsharpe, rf=rf_anual),
                 "Markowitz": calcular_metricas(port_markowitz, rf=rf_anual),
             }
-
 
             df_metrics_opt = pd.DataFrame(metrics_opt)
             st.markdown("### Métricas de portafolios optimizados")
